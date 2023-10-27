@@ -1,0 +1,29 @@
+select 
+       x.id_empresa,
+       x.id_pessoa,
+       a.id_conta,
+       a.id_cc as id_ccusto,
+       a.data,
+       x.historico,
+       x.documento,
+       a.valor 
+into "memory\t1"
+from caixascc a
+
+left join caixas x on x.id = a.id_caixa
+left join contas b on b.id = a.id_conta
+where data between [dataini] and [datafim]
+      and x.id_empresa=if([empresa]=0,x.id_empresa,[empresa])
+      and a.id_cc = if([ccusto] = 0, a.id_cc,[ccusto]) 
+      and b.classe like '[conta]%'
+      and x.id_pessoa= if([idpessoa]=0,x.id_pessoa,[idpessoa])
+;
+select b.id,
+       b.classe,
+       b.descricao,
+       b.fluxo, 
+       a.*
+from "memory\t1" a
+left join contas b on b.id = a.id_conta
+where a.id_conta is not null
+order by b.classe,a.id_pessoa,a.data

@@ -1,0 +1,75 @@
+SELECT 
+       a.id_empresa,
+       a.id_conta,
+       a.id_ccusto,
+       a.data,
+       a.historico,
+       a.valor,
+       a.link_TP,
+       
+CASE
+WHEN a.link_TP = 'CO' THEN C.ID_FORNEC
+WHEN a.link_TP = 'CX' THEN D.ID_PESSOA
+WHEN a.link_TP = 'PM' THEN E.ID_FOR
+WHEN a.link_TP = 'NF' THEN F.ID_CLIENTE
+WHEN a.link_TP = 'RM' THEN G.ID_CLIENTE
+WHEN a.link_TP = 'DR' THEN Y.ID_FORNECEDOR
+WHEN a.link_TP = 'DP' THEN X.ID_CLIENTE
+END as IDpessoa,
+
+CASE
+    WHEN a.link_TP = 'CO' THEN CAST(C.NUMERO AS INT)
+    WHEN a.link_TP = 'CX' THEN CAST(D.DOCUMENTO AS INT)
+    WHEN a.link_TP = 'PM' THEN CAST(E.NUMERO AS INT)
+    WHEN a.link_TP = 'NF' THEN CAST(F.NUMERO AS INT)
+    WHEN a.link_TP = 'RM' THEN CAST(G.NUMERO AS INT)
+    WHEN a.link_TP = 'DR' THEN CAST(Y.DOC_NUM AS INT)
+    WHEN a.link_TP = 'DP' THEN CAST(X.DOC_NUM AS INT)
+END AS doc
+
+
+
+
+INTO "memory\t1"
+FROM contaslanc a
+LEFT JOIN contas b ON b.id = a.id_conta
+LEFT JOIN ENTRADASM C ON c.id = a.link_id AND a.link_TP ='CO'
+LEFT JOIN CAIXAS D ON D.id = a.link_id AND a.link_TP ='CX'
+LEFT JOIN DPPMESTRE E ON E.id = a.link_id AND a.link_TP ='PM'
+LEFT JOIN NFMESTRE F ON F.id = a.link_id AND a.link_TP ='NF'
+LEFT JOIN DPRMESTRE G ON G.id = a.link_id AND a.link_TP ='RM'
+LEFT JOIN DPPBAIXAS H ON H.id = a.link_id AND a.link_TP ='DR'
+LEFT JOIN DPRBAIXAS I ON I.id = a.link_id AND a.link_TP ='DP'
+LEFT JOIN DPRPRINCIPAL X ON X.ID = I.ID_DP
+LEFT JOIN DPPPRINCIPAL Y ON Y.ID = H.ID_DP
+
+WHERE a.data BETWEEN [dataini] AND [datafim]
+      AND a.id_empresa = IF([empresa] = 0, a.id_empresa, [empresa])
+      AND a.id_ccusto = IF([ccusto] = 0, a.id_ccusto, [ccusto]) 
+      AND b.classe LIKE '[conta]%'
+      AND (
+            (a.link_TP = 'CO' AND C.ID_FORNEC = IF([idpessoa] = 0, C.ID_FORNEC, [idpessoa]))
+            OR
+            (a.link_TP = 'CX' AND D.ID_PESSOA = IF([idpessoa] = 0, D.ID_PESSOA, [idpessoa]))
+            OR
+            (a.link_TP = 'PM' AND E.ID_FOR = IF([idpessoa] = 0, E.ID_FOR, [idpessoa]))
+            OR
+            (a.link_TP = 'NF' AND F.ID_CLIENTE = IF([idpessoa] = 0, F.ID_CLIENTE, [idpessoa]))
+            OR
+            (a.link_TP = 'RM' AND G.ID_CLIENTE = IF([idpessoa] = 0, G.ID_CLIENTE, [idpessoa]))
+            OR
+            (a.link_TP = 'DR' AND Y.ID_FORNECEDOR = IF([idpessoa] = 0, Y.ID_FORNECEDOR, [idpessoa]))
+            OR
+            (a.link_TP = 'DP' AND X.ID_CLIENTE = IF([idpessoa] = 0, X.ID_CLIENTE, [idpessoa]))
+          );
+
+SELECT 
+       b.id,
+       b.classe,
+       b.descricao,
+       b.fluxo,
+       a.* 
+FROM "memory\t1" a
+JOIN contas b ON b.id = a.id_conta
+
+ORDER BY b.classe, IDpessoa, a.data;
